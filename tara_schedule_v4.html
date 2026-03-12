@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tara's Schedule</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg:#0a0a0f; --s1:#111118; --s2:#18181f; --s3:#22222c; --border:#2c2c3a;
+  --text:#ededf5; --dim:#6b6b82;
+  --work:#3b82f6; --commute:#374151; --exercise:#10b981; --creative:#f97316;
+  --admin:#8b5cf6; --social:#ec4899; --mealprep:#eab308; --selfcare:#06b6d4;
+  --free:#4b5563; --gaming:#a855f7; --intimacy:#f472b6; --sleep:#1e1b4b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;}
+
+/* Layout */
+.app{display:grid;grid-template-columns:1fr 280px;min-height:100vh;}
+.main{padding:20px;border-right:1px solid var(--border);overflow-y:auto;}
+.sidebar{padding:16px;overflow-y:auto;background:var(--s1);}
+
+/* Header */
+h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;letter-spacing:-.02em;}
+.header-sub{font-size:.6rem;color:var(--dim);margin-top:2px;letter-spacing:.08em;text-transform:uppercase;}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin:12px 0 16px;}
+.leg{display:flex;align-items:center;gap:5px;font-size:.6rem;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;}
+.leg-dot{width:7px;height:7px;border-radius:50%;}
+
+/* Week tabs */
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.tab{background:var(--s2);border:1px solid var(--border);color:var(--dim);padding:5px 14px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.04em;transition:all .15s;}
+.tab.active{background:var(--work);border-color:var(--work);color:#fff;}
+
+/* Week grid */
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px;}
+.day-card{background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 6px;cursor:pointer;transition:all .15s;min-height:90px;}
+.day-card:hover{border-color:var(--work);}
+.day-card.active{border-color:var(--work);background:var(--s3);}
+.day-card.off-day{opacity:.5;}
+.day-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+.day-name{font-size:.7rem;font-weight:600;letter-spacing:.04em;}
+.day-info{font-size:.55rem;color:var(--dim);}
+.mini-block{font-size:.5rem;padding:2px 4px;border-radius:2px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;opacity:.9;}
+
+/* Stats bar */
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.stat{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:.6rem;}
+.stat-label{color:var(--dim);text-transform:uppercase;letter-spacing:.04em;}
+.stat-val{font-weight:600;margin-top:1px;}
+
+/* Detail panel */
+.detail-panel{display:none;background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;}
+.detail-panel.show{display:block;}
+.detail-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.detail-title{font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:700;}
+.detail-meta{font-size:.6rem;color:var(--dim);margin-top:2px;}
+.detail-actions{display:flex;flex-direction:column;gap:5px;align-items:flex-end;}
+
+/* Timeline */
+.trow{display:flex;gap:8px;margin-bottom:5px;align-items:stretch;}
+.ttime{font-size:.6rem;color:var(--dim);width:36px;flex-shrink:0;padding-top:4px;line-height:1.4;}
+.tblock{flex:1;border-radius:4px;padding:6px 10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:opacity .1s;position:relative;}
+.tblock:hover{opacity:.85;}
+.tblock-title{font-size:.7rem;font-weight:500;}
+.tblock-note{font-size:.58rem;opacity:.7;margin-top:2px;}
+.tblock-edit{font-size:.6rem;opacity:.3;flex-shrink:0;padding-left:8px;}
+
+/* Category colors */
+.work{background:var(--work);}
+.commute{background:var(--commute);}
+.exercise{background:var(--exercise);}
+.creative{background:var(--creative);}
+.admin{background:var(--admin);}
+.social{background:var(--social);}
+.mealprep{background:var(--mealprep);color:#111;}
+.selfcare{background:var(--selfcare);}
+.free{background:var(--free);}
+.gaming{background:var(--gaming);}
+.intimacy{background:var(--intimacy);}
+.sleep{background:var(--sleep);}
+
+/* Buttons */
+.add-btn{width:100%;background:none;border:1px dashed var(--border);color:var(--dim);padding:8px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.06em;margin-top:6px;transition:all .15s;}
+.add-btn:hover{border-color:var(--work);color:var(--work);}
+.btn-row{display:flex;gap:6px;margin-top:8px;}
+.btn-sm{background:none;border:1px solid var(--border);color:var(--dim);padding:4px 10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.04em;transition:all .15s;}
+.btn-sm:hover{border-color:var(--work);color:var(--text);}
+.btn-sm.danger{border-color:#7f1d1d;color:#fca5a5;}
+.btn-sm.danger:hover{background:#7f1d1d;}
+
+/* Day tasks */
+.day-tasks{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);}
+.section-title{font-size:.6rem;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.badge{background:var(--admin);color:#fff;border-radius:3px;padding:1px 5px;font-size:.55rem;}
+.task-item{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--s2);border-radius:4px;margin-bottom:4px;font-size:.65rem;}
+.task-item input[type=checkbox]{accent-color:var(--work);flex-shrink:0;}
+.task-item.done span{text-decoration:line-through;opacity:.4;}
+.task-del{background:none;border:none;color:var(--dim);cursor:pointer;font-size:.7rem;margin-left:auto;padding:0 2px;}
+
+/* Sidebar */
+.sidebar-section{margin-bottom:20px;}
+.sidebar-title{font-size:.65rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.badge-orange{background:var(--creative);color:#fff;border-radius:3px;padding:1px 5px;font-size:.55rem;}
+.smart-item{padding:7px 8px;background:var(--s2);border-radius:4px;margin-bottom:4px;cursor:pointer;font-size:.62rem;display:flex;align-items:flex-start;gap:6px;border:1px solid var(--border);}
+.smart-item.done{opacity:.4;text-decoration:line-through;}
+.smart-item-cat{font-size:.52rem;color:var(--dim);margin-top:2px;text-transform:uppercase;}
+.assign-btn{margin-left:auto;flex-shrink:0;background:var(--s3);border:1px solid var(--border);color:var(--dim);border-radius:3px;padding:2px 5px;font-size:.55rem;cursor:pointer;white-space:nowrap;}
+.assign-btn:hover{border-color:var(--work);color:var(--work);}
+
+/* Weekly reset */
+.reset-section{margin-bottom:12px;}
+.reset-section-title{font-size:.6rem;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.reset-item{display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--s2);border-radius:4px;margin-bottom:3px;font-size:.63rem;}
+.reset-item input{accent-color:var(--exercise);}
+.reset-item.done span{text-decoration:line-through;opacity:.4;}
+.reset-progress{height:4px;background:var(--s3);border-radius:2px;margin-bottom:12px;}
+.reset-bar{height:100%;background:var(--exercise);border-radius:2px;transition:width .3s;}
+
+/* Overlay + Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center;padding:16px;}
+.overlay.show{display:flex;}
+.modal{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:20px;width:100%;max-width:340px;max-height:90vh;overflow-y:auto;}
+.modal h3{font-family:'Space Grotesk',sans-serif;font-size:.9rem;letter-spacing:.04em;margin-bottom:14px;}
+.modal label{display:block;font-size:.6rem;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;margin-top:10px;}
+.modal input,.modal select,.modal textarea{width:100%;background:var(--s3);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.7rem;}
+.modal textarea{resize:vertical;}
+.modal-btns{display:flex;gap:8px;margin-top:16px;align-items:center;}
+.btn-c{background:none;border:1px solid var(--border);color:var(--dim);padding:7px 14px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.7rem;}
+.btn-s{background:var(--work);border:none;color:#fff;padding:7px 16px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.7rem;}
+.btn-del{background:#7f1d1d;color:#fca5a5;border:none;padding:7px 14px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.7rem;margin-right:auto;}
+
+/* Cascade list */
+.cascade-item{display:flex;align-items:center;gap:10px;padding:8px;background:var(--s3);border-radius:4px;margin-bottom:5px;cursor:pointer;border:1px solid var(--border);transition:border-color .15s;}
+.cascade-item.selected{border-color:var(--work);}
+.cascade-item input{accent-color:var(--work);}
+
+/* Mobile */
+@media(max-width:700px){
+  .app{grid-template-columns:1fr;}
+  .sidebar{border-top:1px solid var(--border);}
+  .week-grid{grid-template-columns:repeat(4,1fr);}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="main">
+  <div style="margin-bottom:14px;">
+    <h1>TARA'S SCHEDULE</h1>
+    <div class="header-sub">Click any day · Edit any block · Cascade time changes</div>
+  </div>
+
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:var(--work)"></div>Work</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--commute)"></div>Commute</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--exercise)"></div>Exercise</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--creative)"></div>Creative</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--admin)"></div>Admin</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--social)"></div>Social</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--gaming)"></div>Gaming</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--mealprep)"></div>Meal Prep</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--selfcare)"></div>Self-Care</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--free)"></div>Free</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--intimacy)"></div>Intimacy</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--sleep)"></div>Sleep</div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="stats" id="stats"></div>
+  <div class="week-grid" id="week-grid"></div>
+
+  <div class="detail-panel" id="detail">
+    <div class="detail-top">
+      <div>
+        <div class="detail-title" id="d-title"></div>
+        <div class="detail-meta" id="d-meta"></div>
+      </div>
+      <div class="detail-actions">
+        <button class="btn-sm" onclick="closeDetail()">✕ Close</button>
+        <button class="btn-sm danger" onclick="resetDay()">↺ Reset Day</button>
+      </div>
+    </div>
+    <div id="timeline"></div>
+    <button class="add-btn" onclick="openAddModal()">+ ADD BLOCK TO THIS DAY</button>
+    <div class="day-tasks" id="day-tasks">
+      <div class="section-title">TASKS FOR THIS DAY <span class="badge" id="day-task-count">0</span></div>
+      <div id="day-task-list"></div>
+      <button class="add-btn" onclick="openTaskAssign()">+ ASSIGN TASK TO THIS DAY</button>
+    </div>
+    <div id="weekly-reset-container" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)"></div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-title">PRIORITY TASKS <span class="badge" id="smart-badge">4</span></div>
+    <div id="smart-list"></div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">BACKLOG TASKS <span class="badge-orange" id="asmr-badge">12</span></div>
+    <div style="font-size:.58rem;color:var(--dim);margin-bottom:8px;">No time pressure — assign or check off when done.</div>
+    <div id="asmr-list"></div>
+    <button class="add-btn" onclick="openNewTaskModal()">+ NEW TASK</button>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title" style="color:var(--dim)">DATA</div>
+    <button class="btn-sm" style="width:100%;margin-bottom:5px;" onclick="exportData()">⬇ Export data</button>
+    <button class="btn-sm danger" style="width:100%;" onclick="clearAllData()">✕ Clear all data</button>
+  </div>
+</div>
+</div>
+
+<!-- ADD BLOCK MODAL -->
+<div class="overlay" id="add-modal">
+  <div class="modal">
+    <h3>ADD TIME BLOCK</h3>
+    <label>Start Time</label><input type="time" id="am-start" value="17:00">
+    <label>End Time</label><input type="time" id="am-end" value="18:00">
+    <label>Category</label>
+    <select id="am-cat">
+      <option value="work">Work</option>
+      <option value="commute">Commute</option>
+      <option value="exercise">Exercise / Walk</option>
+      <option value="creative">Creative</option>
+      <option value="admin">Admin / Appointments</option>
+      <option value="social">Social</option>
+      <option value="gaming">Gaming</option>
+      <option value="mealprep">Meal Prep / Cooking</option>
+      <option value="selfcare">Self-Care</option>
+      <option value="free">Free Time</option>
+      <option value="intimacy">Intimacy</option>
+      <option value="sleep">Sleep</option>
+    </select>
+    <label>Label</label><input type="text" id="am-label" placeholder="e.g. Dad appt, Extra work, Walk...">
+    <label>Note (optional)</label><textarea id="am-note" rows="2" placeholder="Any details..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-c" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-s" onclick="saveAddBlock()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT BLOCK MODAL -->
+<div class="overlay" id="edit-modal">
+  <div class="modal">
+    <h3>EDIT BLOCK</h3>
+    <label>Start Time</label><input type="time" id="em-start">
+    <label>End Time</label><input type="time" id="em-end">
+    <label>Category</label>
+    <select id="em-cat">
+      <option value="work">Work</option>
+      <option value="commute">Commute</option>
+      <option value="exercise">Exercise / Walk</option>
+      <option value="creative">Creative</option>
+      <option value="admin">Admin / Appointments</option>
+      <option value="social">Social</option>
+      <option value="gaming">Gaming</option>
+      <option value="mealprep">Meal Prep / Cooking</option>
+      <option value="selfcare">Self-Care</option>
+      <option value="free">Free Time</option>
+      <option value="intimacy">Intimacy</option>
+      <option value="sleep">Sleep</option>
+    </select>
+    <label>Label</label><input type="text" id="em-label">
+    <label>Note (optional)</label><textarea id="em-note" rows="2"></textarea>
+    <div class="modal-btns">
+      <button class="btn-del" onclick="confirmDeleteBlock()">🗑 Delete</button>
+      <button class="btn-c" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-s" onclick="saveEditBlock()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CASCADE MODAL -->
+<div class="overlay" id="cascade-modal">
+  <div class="modal">
+    <h3>SHIFT FOLLOWING BLOCKS?</h3>
+    <p style="font-size:.63rem;color:var(--dim);margin-bottom:12px;">End time shifted by <strong id="cascade-delta" style="color:var(--text)"></strong>. Choose which blocks to move:</p>
+    <div id="cascade-list"></div>
+    <div class="modal-btns">
+      <button class="btn-c" onclick="closeCascade()">Skip</button>
+      <button class="btn-c" onclick="selectAllCascade()" style="color:var(--text)">All</button>
+      <button class="btn-s" onclick="applyCascade()">Shift Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK ASSIGN MODAL -->
+<div class="overlay" id="task-modal">
+  <div class="modal">
+    <h3>ASSIGN TASK TO <span id="tm-day"></span></h3>
+    <label>Source</label>
+    <select id="tm-source" onchange="renderTaskOptions()">
+      <option value="smart">Priority Tasks</option>
+      <option value="asmr">Backlog Tasks</option>
+      <option value="custom">Custom (type your own)</option>
+    </select>
+    <label>Task</label>
+    <select id="tm-task"></select>
+    <input type="text" id="tm-custom" placeholder="Type task..." style="display:none;margin-top:4px;">
+    <div class="modal-btns">
+      <button class="btn-c" onclick="closeTaskModal()">Cancel</button>
+      <button class="btn-s" onclick="assignTask()">Assign</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW TASK MODAL -->
+<div class="overlay" id="new-task-modal">
+  <div class="modal">
+    <h3>NEW BACKLOG TASK</h3>
+    <label>Task Name</label><input type="text" id="nt-name" placeholder="What needs doing?">
+    <label>Category</label><input type="text" id="nt-cat" placeholder="e.g. Admin, Home, Health...">
+    <div class="modal-btns">
+      <button class="btn-c" onclick="closeNewTaskModal()">Cancel</button>
+      <button class="btn-s" onclick="saveNewTask()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const ALL_DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+
+// ─── SCHEDULE DATA ────────────────────────────────────────────────────────────
+const BASE = {
+  w1: {
+    MON:[
+      {s:'00:00',e:'04:30',c:'sleep',l:'Sleep',n:'Target 9:30pm–4:30am'},
+      {s:'04:30',e:'05:00',c:'selfcare',l:'Sunrise alarm + birds 🌅',n:'Gradual light wake'},
+      {s:'05:00',e:'05:30',c:'exercise',l:'Stationary bike'},
+      {s:'05:30',e:'06:00',c:'selfcare',l:'Get ready',n:'Hair, makeup, pack bag, make water'},
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Coffee + light therapy + admin',n:'Breakfast, light therapy, quick admin'},
+      {s:'06:30',e:'07:00',c:'selfcare',l:'Final prep + cats'},
+      {s:'07:00',e:'08:00',c:'commute',l:'Commute in'},
+      {s:'08:00',e:'15:30',c:'work',l:'Work',n:'7 hrs'},
+      {s:'15:30',e:'16:45',c:'commute',l:'Commute home'},
+      {s:'17:00',e:'17:20',c:'selfcare',l:'Decompress'},
+      {s:'17:30',e:'18:15',c:'exercise',l:'Walk'},
+      {s:'18:30',e:'19:15',c:'mealprep',l:'Cook / heat prep'},
+      {s:'19:30',e:'21:00',c:'free',l:'Free / Greg time'},
+      {s:'21:00',e:'21:20',c:'selfcare',l:'Evening shower 🚿'},
+      {s:'21:20',e:'21:30',c:'selfcare',l:'Wind down'},
+    ],
+    TUE:[
+      {s:'00:00',e:'04:30',c:'sleep',l:'Sleep'},
+      {s:'04:30',e:'05:00',c:'selfcare',l:'Sunrise alarm + birds 🌅'},
+      {s:'05:00',e:'05:30',c:'exercise',l:'Stationary bike'},
+      {s:'05:30',e:'06:00',c:'selfcare',l:'Get ready'},
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Coffee + light therapy + admin'},
+      {s:'06:30',e:'07:00',c:'selfcare',l:'Final prep + cats'},
+      {s:'07:00',e:'08:00',c:'commute',l:'Commute in'},
+      {s:'08:00',e:'15:30',c:'work',l:'Work',n:'7 hrs'},
+      {s:'15:30',e:'16:45',c:'commute',l:'Commute home'},
+      {s:'17:00',e:'17:20',c:'selfcare',l:'Decompress'},
+      {s:'17:30',e:'18:15',c:'exercise',l:'Walk'},
+      {s:'18:30',e:'19:15',c:'mealprep',l:'Cook / heat prep'},
+      {s:'19:30',e:'21:30',c:'creative',l:'Game design or painting'},
+      {s:'21:00',e:'21:20',c:'selfcare',l:'Evening shower 🚿'},
+      {s:'21:20',e:'21:30',c:'selfcare',l:'Wind down'},
+    ],
+    WED:[
+      {s:'00:00',e:'04:30',c:'sleep',l:'Sleep'},
+      {s:'04:30',e:'05:00',c:'selfcare',l:'Sunrise alarm + birds 🌅'},
+      {s:'05:00',e:'05:30',c:'exercise',l:'Stationary bike'},
+      {s:'05:30',e:'06:00',c:'selfcare',l:'Get ready'},
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Coffee + light therapy + admin'},
+      {s:'06:30',e:'07:00',c:'selfcare',l:'Final prep + cats'},
+      {s:'07:00',e:'08:00',c:'commute',l:'Commute in'},
+      {s:'08:00',e:'15:30',c:'work',l:'Work',n:'7 hrs'},
+      {s:'15:30',e:'16:45',c:'commute',l:'Commute home'},
+      {s:'17:00',e:'17:20',c:'selfcare',l:'Decompress'},
+      {s:'17:30',e:'18:30',c:'admin',l:'Admin block',n:'Tracking, health, cat chart'},
+      {s:'18:30',e:'19:15',c:'mealprep',l:'Cook / heat prep'},
+      {s:'19:30',e:'21:30',c:'gaming',l:'Gaming w/ friends (optional)'},
+      {s:'21:00',e:'21:20',c:'selfcare',l:'Evening shower 🚿'},
+      {s:'21:20',e:'21:30',c:'selfcare',l:'Wind down'},
+    ],
+    THU:[
+      {s:'00:00',e:'04:30',c:'sleep',l:'Sleep'},
+      {s:'04:30',e:'05:00',c:'selfcare',l:'Sunrise alarm + birds 🌅'},
+      {s:'05:00',e:'05:30',c:'exercise',l:'Stationary bike'},
+      {s:'05:30',e:'06:00',c:'selfcare',l:'Get ready'},
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Coffee + light therapy + admin'},
+      {s:'06:30',e:'07:00',c:'selfcare',l:'Final prep + cats'},
+      {s:'07:00',e:'08:00',c:'commute',l:'Commute in'},
+      {s:'08:00',e:'19:00',c:'work',l:'Long day',n:'10.5 hrs'},
+      {s:'19:00',e:'20:15',c:'commute',l:'Commute home'},
+      {s:'20:15',e:'20:35',c:'selfcare',l:'Evening shower 🚿'},
+      {s:'20:35',e:'21:30',c:'selfcare',l:'Recovery — no demands',n:'Thu night protected'},
+      {s:'21:30',e:'21:45',c:'selfcare',l:'Wind down'},
+    ],
+    FRI:[
+      {s:'00:00',e:'04:30',c:'sleep',l:'Sleep'},
+      {s:'04:30',e:'05:00',c:'selfcare',l:'Sunrise alarm + birds 🌅'},
+      {s:'05:00',e:'05:30',c:'exercise',l:'Stationary bike'},
+      {s:'05:30',e:'06:00',c:'selfcare',l:'Get ready'},
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Coffee + light therapy + admin'},
+      {s:'06:30',e:'07:00',c:'selfcare',l:'Final prep + cats'},
+      {s:'07:00',e:'08:00',c:'commute',l:'Commute in'},
+      {s:'08:00',e:'15:30',c:'work',l:'Work',n:'7 hrs'},
+      {s:'15:30',e:'16:45',c:'commute',l:'Commute home'},
+      {s:'17:00',e:'17:20',c:'selfcare',l:'Decompress'},
+      {s:'17:30',e:'18:30',c:'exercise',l:'Walk'},
+      {s:'18:30',e:'19:15',c:'mealprep',l:'Cook / heat prep'},
+      {s:'19:30',e:'21:30',c:'social',l:'Social / free evening'},
+      {s:'21:00',e:'21:20',c:'selfcare',l:'Evening shower 🚿'},
+    ],
+    SAT:[
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Natural wake ☀️',n:'No alarm — body clock tends to 6–7am'},
+      {s:'06:30',e:'07:30',c:'selfcare',l:'Coffee + cats + slow start'},
+      {s:'07:30',e:'09:30',c:'admin',l:'Apartment pickup 🧹',n:'2hr reset — dishes, surfaces, floors, clutter'},
+      {s:'09:30',e:'10:00',c:'selfcare',l:'Breakfast + light therapy'},
+      {s:'10:00',e:'13:00',c:'creative',l:'Art / painting 🎨',n:'Dedicated art time — no agenda, just make stuff'},
+      {s:'13:00',e:'14:00',c:'free',l:'Lunch + break'},
+      {s:'14:00',e:'17:00',c:'creative',l:'Tabletop game design 🎲',n:'Game dev block — cards, mechanics, world'},
+      {s:'17:00',e:'22:00',c:'social',l:'Social (W1 social Sat)',n:'Flexible — out or low-key at home'},
+      {s:'21:00',e:'21:20',c:'selfcare',l:'Evening shower 🚿'},
+    ],
+    SUN:[
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Natural wake ☀️'},
+      {s:'06:30',e:'07:30',c:'selfcare',l:'Coffee + cats + slow start'},
+      {s:'07:30',e:'08:30',c:'admin',l:'Weekly planning + reset checklist',n:'Plan week, review priorities, start reset list'},
+      {s:'08:30',e:'09:00',c:'selfcare',l:'Breakfast + light therapy'},
+      {s:'09:00',e:'15:00',c:'mealprep',l:'Meal prep 🍳',n:'6hr block — full week proteins, grains, snacks, portions'},
+      {s:'15:00',e:'16:00',c:'free',l:'Decompress / reading attempt'},
+      {s:'16:00',e:'18:00',c:'creative',l:'Creative time — art or game design'},
+      {s:'18:00',e:'20:00',c:'social',l:'Greg time'},
+      {s:'20:00',e:'20:20',c:'selfcare',l:'Evening shower 🚿',n:'Early enough — Mon is 4:30am'},
+      {s:'20:20',e:'21:00',c:'selfcare',l:'Wind down',n:'Lights low, no screens, prep for Mon'},
+    ],
+  },
+  w2: {
+    MON:[
+      {s:'00:00',e:'04:30',c:'sleep',l:'Sleep'},
+      {s:'04:30',e:'05:00',c:'selfcare',l:'Sunrise alarm + birds 🌅'},
+      {s:'05:00',e:'05:30',c:'exercise',l:'Stationary bike'},
+      {s:'05:30',e:'06:00',c:'selfcare',l:'Get ready'},
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Coffee + light therapy + admin'},
+      {s:'06:30',e:'07:00',c:'selfcare',l:'Final prep + cats'},
+      {s:'07:00',e:'08:00',c:'commute',l:'Commute in'},
+      {s:'08:00',e:'15:30',c:'work',l:'Work',n:'7 hrs'},
+      {s:'15:30',e:'16:45',c:'commute',l:'Commute home'},
+      {s:'17:00',e:'17:20',c:'selfcare',l:'Decompress'},
+      {s:'17:30',e:'18:15',c:'exercise',l:'Walk'},
+      {s:'18:30',e:'19:15',c:'mealprep',l:'Cook / heat prep'},
+      {s:'19:30',e:'21:30',c:'creative',l:'Game design or painting'},
+      {s:'21:00',e:'21:20',c:'selfcare',l:'Evening shower 🚿'},
+      {s:'21:20',e:'21:30',c:'selfcare',l:'Wind down'},
+    ],
+    TUE:[
+      {s:'00:00',e:'04:30',c:'sleep',l:'Sleep'},
+      {s:'04:30',e:'05:00',c:'selfcare',l:'Sunrise alarm + birds 🌅'},
+      {s:'05:00',e:'05:30',c:'exercise',l:'Stationary bike'},
+      {s:'05:30',e:'06:00',c:'selfcare',l:'Get ready'},
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Coffee + light therapy + admin'},
+      {s:'06:30',e:'07:00',c:'selfcare',l:'Final prep + cats'},
+      {s:'07:00',e:'08:00',c:'commute',l:'Commute in'},
+      {s:'08:00',e:'15:30',c:'work',l:'Work',n:'7 hrs'},
+      {s:'15:30',e:'16:45',c:'commute',l:'Commute home'},
+      {s:'17:00',e:'17:20',c:'selfcare',l:'Decompress'},
+      {s:'17:30',e:'18:15',c:'exercise',l:'Walk'},
+      {s:'18:30',e:'19:15',c:'mealprep',l:'Cook / heat prep'},
+      {s:'19:30',e:'21:30',c:'admin',l:'Admin / appts / tracking'},
+      {s:'21:00',e:'21:20',c:'selfcare',l:'Evening shower 🚿'},
+      {s:'21:20',e:'21:30',c:'selfcare',l:'Wind down'},
+    ],
+    WED:[
+      {s:'00:00',e:'04:30',c:'sleep',l:'Sleep'},
+      {s:'04:30',e:'05:00',c:'selfcare',l:'Sunrise alarm + birds 🌅'},
+      {s:'05:00',e:'05:30',c:'exercise',l:'Stationary bike'},
+      {s:'05:30',e:'06:00',c:'selfcare',l:'Get ready'},
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Coffee + light therapy + admin'},
+      {s:'06:30',e:'07:00',c:'selfcare',l:'Final prep + cats'},
+      {s:'07:00',e:'08:00',c:'commute',l:'Commute in'},
+      {s:'08:00',e:'15:30',c:'work',l:'Work',n:'7 hrs'},
+      {s:'15:30',e:'16:45',c:'commute',l:'Commute home'},
+      {s:'17:00',e:'17:20',c:'selfcare',l:'Decompress'},
+      {s:'17:30',e:'18:30',c:'exercise',l:'Walk'},
+      {s:'18:30',e:'19:15',c:'mealprep',l:'Cook / heat prep'},
+      {s:'19:30',e:'21:30',c:'gaming',l:'Gaming w/ friends (optional)'},
+      {s:'21:00',e:'21:20',c:'selfcare',l:'Evening shower 🚿'},
+      {s:'21:20',e:'21:30',c:'selfcare',l:'Wind down'},
+    ],
+    THU:[
+      {s:'00:00',e:'04:30',c:'sleep',l:'Sleep'},
+      {s:'04:30',e:'05:00',c:'selfcare',l:'Sunrise alarm + birds 🌅'},
+      {s:'05:00',e:'05:30',c:'exercise',l:'Stationary bike'},
+      {s:'05:30',e:'06:00',c:'selfcare',l:'Get ready'},
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Coffee + light therapy + admin'},
+      {s:'06:30',e:'07:00',c:'selfcare',l:'Final prep + cats'},
+      {s:'07:00',e:'08:00',c:'commute',l:'Commute in'},
+      {s:'08:00',e:'19:00',c:'work',l:'Long day',n:'10.5 hrs'},
+      {s:'19:00',e:'20:15',c:'commute',l:'Commute home'},
+      {s:'20:15',e:'20:35',c:'selfcare',l:'Evening shower 🚿'},
+      {s:'20:35',e:'21:30',c:'selfcare',l:'Recovery — no demands'},
+      {s:'21:30',e:'21:45',c:'selfcare',l:'Wind down'},
+    ],
+    FRI:[
+      {s:'00:00',e:'04:30',c:'sleep',l:'Sleep — OFF DAY'},
+      {s:'04:30',e:'05:30',c:'selfcare',l:'Slow wake — no hard alarm'},
+      {s:'05:30',e:'06:30',c:'exercise',l:'Morning bike — longer'},
+      {s:'06:30',e:'07:30',c:'selfcare',l:'Coffee + light therapy + admin + cats'},
+      {s:'09:00',e:'11:00',c:'admin',l:'Admin anchor block',n:'Taxes, health tracker, UPSE forms, cat chart'},
+      {s:'11:00',e:'12:30',c:'selfcare',l:'Self-care / errands'},
+      {s:'12:30',e:'15:00',c:'free',l:'Free / errands / backlog task'},
+      {s:'15:00',e:'17:00',c:'creative',l:'Creative time'},
+      {s:'17:00',e:'18:30',c:'exercise',l:'Afternoon walk'},
+      {s:'19:00',e:'21:30',c:'social',l:'Social / free evening'},
+      {s:'21:00',e:'21:20',c:'selfcare',l:'Evening shower 🚿'},
+    ],
+    SAT:[
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Natural wake ☀️',n:'No alarm — body clock tends to 6–7am'},
+      {s:'06:30',e:'07:30',c:'selfcare',l:'Coffee + cats + slow start'},
+      {s:'07:30',e:'09:30',c:'admin',l:'Apartment pickup 🧹',n:'2hr reset — dishes, surfaces, floors, clutter'},
+      {s:'09:30',e:'10:00',c:'selfcare',l:'Breakfast + light therapy'},
+      {s:'10:00',e:'13:00',c:'creative',l:'Art / painting 🎨',n:'Dedicated art time — no agenda, just make stuff'},
+      {s:'13:00',e:'14:00',c:'free',l:'Lunch + break'},
+      {s:'14:00',e:'17:00',c:'creative',l:'Tabletop game design 🎲',n:'Game dev block — cards, mechanics, world'},
+      {s:'17:00',e:'22:00',c:'social',l:'OUT — Social plans (W2)',n:'Bi-weekly social Saturday'},
+      {s:'21:00',e:'21:20',c:'selfcare',l:'Evening shower 🚿'},
+    ],
+    SUN:[
+      {s:'06:00',e:'06:30',c:'selfcare',l:'Natural wake ☀️'},
+      {s:'06:30',e:'07:30',c:'selfcare',l:'Coffee + cats + slow start'},
+      {s:'07:30',e:'08:30',c:'admin',l:'Weekly planning + reset checklist',n:'Plan week, review priorities, start reset list'},
+      {s:'08:30',e:'09:00',c:'selfcare',l:'Breakfast + light therapy'},
+      {s:'09:00',e:'15:00',c:'mealprep',l:'Meal prep 🍳',n:'6hr block — full week proteins, grains, snacks, portions'},
+      {s:'15:00',e:'16:00',c:'free',l:'Decompress / reading attempt'},
+      {s:'16:00',e:'18:00',c:'creative',l:'Creative time — art or game design'},
+      {s:'18:00',e:'20:00',c:'social',l:'Greg time'},
+      {s:'20:00',e:'20:20',c:'selfcare',l:'Evening shower 🚿',n:'Early enough — Mon is 4:30am'},
+      {s:'20:20',e:'21:00',c:'selfcare',l:'Wind down',n:'Lights low, no screens, prep for Mon'},
+    ],
+  }
+};
+
+const SMART_TASKS = [
+  {id:'s1',name:'CCM certified case manager exam — study + schedule test',cat:'Admin/Career'},
+  {id:'s2',name:'Start career planning trajectory',cat:'Career'},
+  {id:'s3',name:'Organize Google Drive',cat:'Admin'},
+  {id:'s4',name:'Call Ms. Ferrara',cat:'Admin'},
+];
+
+const ASMR_TASKS = [
+  {id:'a1',name:'Make Greek yogurt calzone',cat:'Fun/Cooking'},
+  {id:'a2',name:'Fix ceramic Xmas tree',cat:'Home'},
+  {id:'a3',name:'Make tapioca pudding',cat:'Fun/Cooking'},
+  {id:'a4',name:'Make Greek yogurt bread',cat:'Fun/Cooking'},
+  {id:'a5',name:'Fill out UPSE reimbursement doctor forms',cat:'Admin'},
+  {id:'a6',name:'Start cat health chart',cat:'Cat Care'},
+  {id:'a7',"name":"Update Ruby's chip",cat:'Cat Care'},
+  {id:'a8',name:'Visitor game card ideas',cat:'Creative/Game'},
+  {id:'a9',name:'Re-record One Night Osama',cat:'Creative/Game'},
+  {id:'a10',name:'Update my health tracker',cat:'Admin/Health'},
+  {id:'a11',"name":"Update Papi's health tracker",cat:'Admin/Health'},
+  {id:'a12',name:'Re-sisal cat trees',cat:'Cat Care'},
+];
+
+const WEEKLY_RESET = [
+  {section:'Bedroom',items:['Pick up bedroom','Put away laundry','Pick up desk','Change sheets/pillowcases']},
+  {section:'Bathroom',items:['Wipe down sink/counter','Clean toilet','Mop/wipe floor','Replace towels']},
+  {section:'Kitchen',items:['Wipe down counters','Clean stovetop','Wipe microwave','Take out trash','Mop floor']},
+  {section:'Dining Room',items:['Clear table','Wipe down table','Chairs/floor check']},
+  {section:'Living Room',items:['Pick up clutter','Vacuum/sweep','Dust surfaces']},
+  {section:'Cats',items:['Clean all litter boxes','Wipe litter area','Refill food/water stations','Check cat health notes']},
+  {section:'Meal Prep',items:['Meal prep complete']},
+];
+const RESET_IDS = WEEKLY_RESET.flatMap(s=>s.items.map((_,i)=>`${s.section}-${i}`));
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let view = 'w1';
+let selectedDay = null;
+
+// edits[day] = array of {action:'add'|'replace'|'delete', ...}
+// For 'replace': {action:'replace', orig:{s,e,l}, block:{...}}
+// For 'delete':  {action:'delete', orig:{s,e,l}}
+// For 'add':     {action:'add', block:{...}}
+let edits = {};
+ALL_DAYS.forEach(d => edits[d] = []);
+
+let smartDone = {};
+let asmrDone = {};
+let dayTasks = {};
+ALL_DAYS.forEach(d => dayTasks[d] = []);
+let resetDone = {};
+let userTasks = [];
+
+// ─── PERSISTENCE ─────────────────────────────────────────────────────────────
+function save() {
+  try {
+    localStorage.setItem('t4_edits', JSON.stringify(edits));
+    localStorage.setItem('t4_smartDone', JSON.stringify(smartDone));
+    localStorage.setItem('t4_asmrDone', JSON.stringify(asmrDone));
+    localStorage.setItem('t4_dayTasks', JSON.stringify(dayTasks));
+    localStorage.setItem('t4_resetDone', JSON.stringify(resetDone));
+    localStorage.setItem('t4_userTasks', JSON.stringify(userTasks));
+  } catch(e) {}
+}
+
+function load() {
+  try {
+    const e = localStorage.getItem('t4_edits'); if(e) edits = JSON.parse(e);
+    const sd = localStorage.getItem('t4_smartDone'); if(sd) smartDone = JSON.parse(sd);
+    const ad = localStorage.getItem('t4_asmrDone'); if(ad) asmrDone = JSON.parse(ad);
+    const dt = localStorage.getItem('t4_dayTasks'); if(dt) dayTasks = JSON.parse(dt);
+    const rd = localStorage.getItem('t4_resetDone'); if(rd) resetDone = JSON.parse(rd);
+    const ut = localStorage.getItem('t4_userTasks'); if(ut) userTasks = JSON.parse(ut);
+    // Ensure all days exist
+    ALL_DAYS.forEach(d => { if(!edits[d]) edits[d]=[]; if(!dayTasks[d]) dayTasks[d]=[]; });
+  } catch(e) {}
+}
+
+function exportData() {
+  const data = {edits,smartDone,asmrDone,dayTasks,resetDone,userTasks};
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tara_schedule_data.json';
+  a.click();
+}
+
+function clearAllData() {
+  if(!confirm('Clear ALL saved data and start fresh? This cannot be undone.')) return;
+  ['t4_edits','t4_smartDone','t4_asmrDone','t4_dayTasks','t4_resetDone','t4_userTasks'].forEach(k=>localStorage.removeItem(k));
+  ALL_DAYS.forEach(d=>{edits[d]=[];dayTasks[d]=[];});
+  smartDone={}; asmrDone={}; resetDone={}; userTasks=[];
+  renderAll();
+}
+
+// ─── BLOCK RESOLUTION ─────────────────────────────────────────────────────────
+// Returns the final list of blocks for a day, applying edits on top of base
+function getBlocks(day) {
+  const base = (BASE[view][day] || []).map(b => ({...b, _base:true}));
+  const dayEdits = edits[day] || [];
+
+  // Start with base, apply edits in order
+  let result = [...base];
+
+  for(const edit of dayEdits) {
+    if(edit.action === 'delete') {
+      result = result.filter(b => !sameBlock(b, edit.orig));
+    } else if(edit.action === 'replace') {
+      const idx = result.findIndex(b => sameBlock(b, edit.orig));
+      if(idx > -1) result[idx] = {...edit.block, _edited:true};
+      else result.push({...edit.block, _edited:true}); // fallback
+    } else if(edit.action === 'add') {
+      result.push({...edit.block, _added:true});
+    }
+  }
+
+  return result.sort((a,b) => toMin(a.s) - toMin(b.s));
+}
+
+function sameBlock(a, b) {
+  return a.s === b.s && a.e === b.e && a.l === b.l;
+}
+
+// ─── TIME UTILS ───────────────────────────────────────────────────────────────
+function toMin(t) {
+  const [h,m] = t.split(':').map(Number);
+  return h*60+m;
+}
+
+function toTime(min) {
+  const m = ((min % 1440) + 1440) % 1440;
+  return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+}
+
+function dur(b) {
+  let d = toMin(b.e) - toMin(b.s);
+  if(d < 0) d += 1440;
+  return d;
+}
+
+function fmtDur(m) {
+  if(m<=0) return '0m';
+  return m>=60 ? `${Math.floor(m/60)}h${m%60?m%60+'m':''}` : `${m}m`;
+}
+
+// ─── RENDER ALL ───────────────────────────────────────────────────────────────
+function renderAll() {
+  renderTabs();
+  renderGrid();
+  renderStats();
+  renderSmart();
+  renderAsmr();
+  if(selectedDay) renderDetail(selectedDay);
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function renderTabs() {
+  document.getElementById('tabs').innerHTML = [
+    {id:'w1',label:'WEEK 1',note:'38.5h'},
+    {id:'w2',label:'WEEK 2',note:'31.5h + OFF FRI'},
+  ].map(v=>`
+    <div class="tab ${view===v.id?'active':''}" onclick="setView('${v.id}')">
+      ${v.label} <span style="opacity:.5;font-size:.6rem">${v.note}</span>
+    </div>`).join('');
+}
+
+function setView(v) { view=v; renderAll(); }
+
+// ─── GRID ─────────────────────────────────────────────────────────────────────
+function renderGrid() {
+  document.getElementById('week-grid').innerHTML = ALL_DAYS.map(day => {
+    const blocks = getBlocks(day);
+    const isOff = view==='w2' && day==='FRI';
+    const show = blocks.filter(b=>b.c!=='sleep');
+    return `
+    <div class="day-card ${selectedDay===day?'active':''} ${isOff?'off-day':''}" onclick="selectDay('${day}')">
+      <div class="day-head">
+        <span class="day-name">${day}</span>
+        <span class="day-info">${isOff?'OFF':day==='THU'?'10.5h':(day==='SAT'||day==='SUN')?'':'7h'}</span>
+      </div>
+      <div>
+        ${show.slice(0,5).map(b=>`<div class="mini-block ${b.c}">${b.l}</div>`).join('')}
+        ${show.length>5?`<div style="font-size:.5rem;color:var(--dim);padding:2px 0">+${show.length-5} more</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const cats = {exercise:0,creative:0,admin:0,free:0,gaming:0};
+  ALL_DAYS.forEach(d => getBlocks(d).forEach(b => {
+    if(cats[b.c]!==undefined) cats[b.c] += dur(b);
+  }));
+  document.getElementById('stats').innerHTML = Object.entries(cats).map(([c,m])=>`
+    <div class="stat">
+      <div class="stat-label">${c}</div>
+      <div class="stat-val" style="color:var(--${c})">${fmtDur(m)}</div>
+    </div>`).join('');
+}
+
+// ─── SELECT DAY ───────────────────────────────────────────────────────────────
+function selectDay(day) {
+  selectedDay = day;
+  renderGrid();
+  renderDetail(day);
+}
+
+function closeDetail() {
+  selectedDay = null;
+  renderGrid();
+  document.getElementById('detail').classList.remove('show');
+}
+
+function resetDay() {
+  if(!selectedDay) return;
+  if(!confirm(`Reset ${selectedDay} to default schedule? All edits for this day will be removed.`)) return;
+  edits[selectedDay] = [];
+  dayTasks[selectedDay] = [];
+  save();
+  renderGrid();
+  renderDetail(selectedDay);
+  renderStats();
+}
+
+// ─── DETAIL PANEL ─────────────────────────────────────────────────────────────
+function renderDetail(day) {
+  const panel = document.getElementById('detail');
+  panel.classList.add('show');
+  document.getElementById('d-title').textContent = day + (view==='w2'&&day==='FRI'?' — OFF':'');
+
+  const blocks = getBlocks(day);
+  const freeMin = blocks.filter(b=>b.c==='free').reduce((s,b)=>s+dur(b),0);
+  const creMin  = blocks.filter(b=>b.c==='creative').reduce((s,b)=>s+dur(b),0);
+  const exMin   = blocks.filter(b=>b.c==='exercise').reduce((s,b)=>s+dur(b),0);
+  document.getElementById('d-meta').textContent = `Free: ${fmtDur(freeMin)} · Creative: ${fmtDur(creMin)} · Exercise: ${fmtDur(exMin)}`;
+
+  document.getElementById('timeline').innerHTML = blocks.map((b,i)=>`
+    <div class="trow">
+      <div class="ttime">${b.s}<br><span style="opacity:.3">${b.e}</span></div>
+      <div class="tblock ${b.c}" onclick="openEditModal(${i})" title="Click to edit">
+        <div>
+          <div class="tblock-title">${b.l}${dur(b)>=60?` <span style="opacity:.5;font-size:.58rem">${fmtDur(dur(b))}</span>`:''}${b._edited?'<span style="opacity:.4;font-size:.55rem"> ✎</span>':b._added?'<span style="opacity:.4;font-size:.55rem"> +</span>':''}</div>
+          ${b.n?`<div class="tblock-note">${b.n}</div>`:''}
+        </div>
+        <span class="tblock-edit">✎</span>
+      </div>
+    </div>`).join('');
+
+  renderDayTasks(day);
+
+  const rc = document.getElementById('weekly-reset-container');
+  if(day==='SUN') { rc.style.display='block'; renderWeeklyReset(); }
+  else rc.style.display='none';
+
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ─── EDIT MODAL ───────────────────────────────────────────────────────────────
+let editIdx = null;
+
+function openEditModal(idx) {
+  editIdx = idx;
+  const b = getBlocks(selectedDay)[idx];
+  document.getElementById('em-start').value = b.s;
+  document.getElementById('em-end').value = b.e;
+  document.getElementById('em-cat').value = b.c;
+  document.getElementById('em-label').value = b.l;
+  document.getElementById('em-note').value = b.n || '';
+  document.getElementById('edit-modal').classList.add('show');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('show');
+  editIdx = null;
+}
+
+function saveEditBlock() {
+  if(editIdx === null) return;
+  const orig = getBlocks(selectedDay)[editIdx];
+  const oldEndMin = toMin(orig.e);
+
+  const updated = {
+    s: document.getElementById('em-start').value,
+    e: document.getElementById('em-end').value,
+    c: document.getElementById('em-cat').value,
+    l: document.getElementById('em-label').value,
+    n: document.getElementById('em-note').value || undefined,
+  };
+
+  if(orig._added) {
+    // Find and update the 'add' edit directly
+    const ae = edits[selectedDay].find(e=>e.action==='add'&&sameBlock(e.block,orig));
+    if(ae) ae.block = updated;
+  } else if(orig._edited) {
+    // Find the existing 'replace' edit and update its block
+    const re = edits[selectedDay].find(e=>e.action==='replace'&&sameBlock(e.block,orig));
+    if(re) re.block = updated;
+    else edits[selectedDay].push({action:'replace', orig:{s:orig.s,e:orig.e,l:orig.l}, block:updated});
+  } else {
+    // Base block — add a replace edit using original identity
+    edits[selectedDay].push({action:'replace', orig:{s:orig.s,e:orig.e,l:orig.l}, block:updated});
+  }
+
+  save();
+  closeEditModal();
+  renderDetail(selectedDay);
+  renderGrid();
+  renderStats();
+
+  // Offer cascade if end time changed — delay so Save click doesn't bubble into cascade overlay
+  const deltaMin = toMin(updated.e) - oldEndMin;
+  if(deltaMin !== 0) setTimeout(() => openCascade(selectedDay, toMin(updated.e), deltaMin), 50);
+}
+
+function confirmDeleteBlock() {
+  if(editIdx === null) return;
+  const orig = getBlocks(selectedDay)[editIdx];
+  if(orig._added) {
+    edits[selectedDay] = edits[selectedDay].filter(e=>!(e.action==='add'&&sameBlock(e.block,orig)));
+  } else {
+    edits[selectedDay].push({action:'delete', orig:{s:orig.s,e:orig.e,l:orig.l}});
+  }
+  save();
+  closeEditModal();
+  renderDetail(selectedDay);
+  renderGrid();
+  renderStats();
+}
+
+document.getElementById('edit-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeEditModal();});
+
+// ─── ADD BLOCK MODAL ──────────────────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('add-modal').classList.add('show');
+}
+function closeAddModal() {
+  document.getElementById('add-modal').classList.remove('show');
+}
+function saveAddBlock() {
+  const block = {
+    s: document.getElementById('am-start').value,
+    e: document.getElementById('am-end').value,
+    c: document.getElementById('am-cat').value,
+    l: document.getElementById('am-label').value || document.getElementById('am-cat').value,
+    n: document.getElementById('am-note').value || undefined,
+  };
+  edits[selectedDay].push({action:'add', block});
+  save();
+  closeAddModal();
+  renderDetail(selectedDay);
+  renderGrid();
+  renderStats();
+}
+document.getElementById('add-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddModal();});
+
+// ─── CASCADE ──────────────────────────────────────────────────────────────────
+let cascadeData = null;
+
+function openCascade(day, afterMin, deltaMin) {
+  const candidates = getBlocks(day).filter(b => toMin(b.s) >= afterMin && b.c !== 'sleep');
+  if(!candidates.length) return;
+
+  cascadeData = {day, deltaMin, candidates, selected: new Set(candidates.map((_,i)=>i))};
+
+  const sign = deltaMin > 0 ? '+' : '';
+  document.getElementById('cascade-delta').textContent = `${sign}${deltaMin} min`;
+  renderCascadeList();
+  document.getElementById('cascade-modal').classList.add('show');
+}
+
+function renderCascadeList() {
+  const {candidates, selected, deltaMin} = cascadeData;
+  document.getElementById('cascade-list').innerHTML = candidates.map((b,i)=>{
+    const ns = toTime(toMin(b.s)+deltaMin);
+    const ne = toTime(toMin(b.e)+deltaMin);
+    return `
+    <div class="cascade-item ${selected.has(i)?'selected':''}" onclick="toggleCascade(${i})">
+      <input type="checkbox" ${selected.has(i)?'checked':''} onclick="event.stopPropagation();toggleCascade(${i})">
+      <div style="flex:1">
+        <div style="font-size:.68rem">${b.l}</div>
+        <div style="font-size:.58rem;color:var(--dim)">${b.s}–${b.e} → <span style="color:var(--text)">${ns}–${ne}</span></div>
+      </div>
+      <div class="mini-block ${b.c}" style="width:8px;min-width:8px;height:18px;border-radius:2px;margin:0"></div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCascade(i) {
+  if(cascadeData.selected.has(i)) cascadeData.selected.delete(i);
+  else cascadeData.selected.add(i);
+  renderCascadeList();
+}
+
+function selectAllCascade() {
+  cascadeData.selected = new Set(cascadeData.candidates.map((_,i)=>i));
+  renderCascadeList();
+}
+
+function applyCascade() {
+  const {day, deltaMin, candidates, selected} = cascadeData;
+  selected.forEach(i => {
+    const orig = candidates[i];
+    const shifted = {
+      s: toTime(toMin(orig.s)+deltaMin),
+      e: toTime(toMin(orig.e)+deltaMin),
+      c: orig.c, l: orig.l, n: orig.n
+    };
+    if(orig._added) {
+      const ae = edits[day].find(e=>e.action==='add'&&sameBlock(e.block,orig));
+      if(ae) ae.block = shifted;
+    } else if(orig._edited) {
+      const re = edits[day].find(e=>e.action==='replace'&&sameBlock(e.block,orig));
+      if(re) re.block = shifted;
+      else edits[day].push({action:'replace',orig:{s:orig.s,e:orig.e,l:orig.l},block:shifted});
+    } else {
+      edits[day].push({action:'replace',orig:{s:orig.s,e:orig.e,l:orig.l},block:shifted});
+    }
+  });
+  save();
+  closeCascade();
+  renderDetail(day);
+  renderGrid();
+  renderStats();
+}
+
+function closeCascade() {
+  document.getElementById('cascade-modal').classList.remove('show');
+  cascadeData = null;
+}
+document.getElementById('cascade-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeCascade();});
+
+// ─── DAY TASKS ────────────────────────────────────────────────────────────────
+function renderDayTasks(day) {
+  const tasks = dayTasks[day] || [];
+  document.getElementById('day-task-count').textContent = tasks.length;
+  document.getElementById('day-task-list').innerHTML = tasks.length
+    ? tasks.map((t,i)=>`
+      <div class="task-item ${t.done?'done':''}">
+        <input type="checkbox" ${t.done?'checked':''} onchange="toggleDayTask('${day}',${i})">
+        <span>${t.label}</span>
+        <button class="task-del" onclick="deleteDayTask('${day}',${i})">✕</button>
+      </div>`).join('')
+    : `<div style="font-size:.6rem;color:var(--dim);padding:4px 0">No tasks assigned yet.</div>`;
+}
+
+function toggleDayTask(day, i) {
+  dayTasks[day][i].done = !dayTasks[day][i].done;
+  // Sync back to smart/asmr done
+  const t = dayTasks[day][i];
+  if(t.type==='smart') smartDone[t.refId] = t.done;
+  if(t.type==='asmr') asmrDone[t.refId] = t.done;
+  save();
+  renderDayTasks(day);
+  renderSmart(); renderAsmr();
+}
+
+function deleteDayTask(day, i) {
+  dayTasks[day].splice(i,1);
+  save();
+  renderDayTasks(day);
+}
+
+function openTaskAssign() {
+  document.getElementById('tm-day').textContent = selectedDay;
+  renderTaskOptions();
+  document.getElementById('task-modal').classList.add('show');
+}
+
+function closeTaskModal() {
+  document.getElementById('task-modal').classList.remove('show');
+}
+
+function renderTaskOptions() {
+  const src = document.getElementById('tm-source').value;
+  const sel = document.getElementById('tm-task');
+  const cust = document.getElementById('tm-custom');
+  if(src==='custom') { sel.style.display='none'; cust.style.display='block'; return; }
+  sel.style.display='block'; cust.style.display='none';
+  const pool = src==='smart' ? SMART_TASKS : [...ASMR_TASKS, ...userTasks];
+  sel.innerHTML = pool.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+function assignTask() {
+  const src = document.getElementById('tm-source').value;
+  let label, refId, type;
+  if(src==='custom') {
+    label = document.getElementById('tm-custom').value.trim();
+    if(!label) return;
+    type='custom'; refId=null;
+  } else {
+    refId = document.getElementById('tm-task').value;
+    const pool = src==='smart' ? SMART_TASKS : [...ASMR_TASKS, ...userTasks];
+    const found = pool.find(t=>t.id===refId);
+    if(!found) return;
+    label=found.name; type=src;
+  }
+  if(!dayTasks[selectedDay]) dayTasks[selectedDay]=[];
+  dayTasks[selectedDay].push({label, type, refId, done: refId?(type==='smart'?!!smartDone[refId]:!!asmrDone[refId]):false});
+  save();
+  closeTaskModal();
+  renderDayTasks(selectedDay);
+}
+
+document.getElementById('task-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTaskModal();});
+
+// ─── SMART / ASMR SIDEBAR ─────────────────────────────────────────────────────
+function renderSmart() {
+  const remaining = SMART_TASKS.filter(t=>!smartDone[t.id]).length;
+  document.getElementById('smart-badge').textContent = remaining;
+  document.getElementById('smart-list').innerHTML = SMART_TASKS.map(t=>`
+    <div class="smart-item ${smartDone[t.id]?'done':''}" onclick="toggleSmart('${t.id}')">
+      <div style="flex:1">
+        <div>${t.name}</div>
+        <div class="smart-item-cat">${t.cat}</div>
+      </div>
+      <button class="assign-btn" onclick="event.stopPropagation();quickAssign('smart','${t.id}')">+ Day</button>
+    </div>`).join('');
+}
+
+function renderAsmr() {
+  const allTasks = [...ASMR_TASKS, ...userTasks];
+  const remaining = allTasks.filter(t=>!asmrDone[t.id]).length;
+  document.getElementById('asmr-badge').textContent = remaining;
+  document.getElementById('asmr-list').innerHTML = allTasks.map(t=>`
+    <div class="smart-item ${asmrDone[t.id]?'done':''}" onclick="toggleAsmr('${t.id}')">
+      <div style="flex:1">
+        <div>${t.name}</div>
+        <div class="smart-item-cat">${t.cat}</div>
+      </div>
+      <button class="assign-btn" onclick="event.stopPropagation();quickAssign('asmr','${t.id}')">+ Day</button>
+    </div>`).join('');
+}
+
+function toggleSmart(id) { smartDone[id]=!smartDone[id]; save(); renderSmart(); }
+function toggleAsmr(id)  { asmrDone[id]=!asmrDone[id];   save(); renderAsmr(); }
+
+function quickAssign(type, id) {
+  if(!selectedDay) { alert('Open a day first, then use + Day'); return; }
+  const pool = type==='smart' ? SMART_TASKS : [...ASMR_TASKS, ...userTasks];
+  const t = pool.find(x=>x.id===id);
+  if(!t) return;
+  if(!dayTasks[selectedDay]) dayTasks[selectedDay]=[];
+  if(dayTasks[selectedDay].some(x=>x.refId===id)) return; // no duplicates
+  dayTasks[selectedDay].push({label:t.name, type, refId:id, done:type==='smart'?!!smartDone[id]:!!asmrDone[id]});
+  save();
+  renderDayTasks(selectedDay);
+}
+
+// ─── NEW TASK MODAL ───────────────────────────────────────────────────────────
+function openNewTaskModal() {
+  document.getElementById('nt-name').value='';
+  document.getElementById('nt-cat').value='';
+  document.getElementById('new-task-modal').classList.add('show');
+  setTimeout(()=>document.getElementById('nt-name').focus(),100);
+}
+function closeNewTaskModal() { document.getElementById('new-task-modal').classList.remove('show'); }
+function saveNewTask() {
+  const name = document.getElementById('nt-name').value.trim();
+  const cat  = document.getElementById('nt-cat').value.trim() || 'General';
+  if(!name) return;
+  userTasks.push({id:'u'+Date.now(), name, cat});
+  save(); closeNewTaskModal(); renderAsmr();
+}
+document.getElementById('new-task-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeNewTaskModal();});
+
+// ─── WEEKLY RESET ─────────────────────────────────────────────────────────────
+function renderWeeklyReset() {
+  const total = RESET_IDS.length;
+  const done  = RESET_IDS.filter(id=>resetDone[id]).length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+
+  document.getElementById('weekly-reset-container').innerHTML = `
+    <div class="section-title">WEEKLY RESET <span class="badge" style="background:var(--exercise)">${done}/${total}</span></div>
+    <div class="reset-progress"><div class="reset-bar" style="width:${pct}%"></div></div>
+    ${WEEKLY_RESET.map(s=>`
+      <div class="reset-section">
+        <div class="reset-section-title">${s.section}</div>
+        ${s.items.map((item,i)=>{
+          const id=`${s.section}-${i}`;
+          return `<div class="reset-item ${resetDone[id]?'done':''}">
+            <input type="checkbox" ${resetDone[id]?'checked':''} onchange="toggleReset('${id}')">
+            <span>${item}</span>
+          </div>`;
+        }).join('')}
+      </div>`).join('')}
+    <button class="btn-sm danger" style="margin-top:8px" onclick="clearReset()">↺ Reset All</button>
+  `;
+}
+
+function toggleReset(id) { resetDone[id]=!resetDone[id]; save(); renderWeeklyReset(); }
+function clearReset() {
+  if(!confirm('Reset all weekly reset items?')) return;
+  resetDone={}; save(); renderWeeklyReset();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+// Nuke every possible old key unconditionally
+(function(){
+  const keys = [];
+  for(let i=0;i<localStorage.length;i++) keys.push(localStorage.key(i));
+  const nuked = keys.filter(k=>k.startsWith('t4_')||k.startsWith('tara_'));
+  nuked.forEach(k=>localStorage.removeItem(k));
+  if(nuked.length) {
+    const t=document.createElement('div');
+    t.style.cssText='position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:8px 16px;border-radius:6px;font-size:.75rem;z-index:9999;font-family:monospace';
+    t.textContent='✓ Cleared '+nuked.length+' old keys';
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(),3000);
+  }
+})();
+load();
+renderAll();
+</script>
+</body>
+</html>
